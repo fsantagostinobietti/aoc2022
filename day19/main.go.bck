@@ -1,0 +1,163 @@
+package main
+
+import (
+	. "aoc2022/utils"
+	_ "embed"
+	"fmt"
+	"regexp"
+	"strings"
+	//mapset "github.com/deckarep/golang-set/v2"
+)
+
+// indexes: 0 ore, 1 clay, 2 obsidian, 3 geode
+
+func CollectResources(botResources [3]int, nResources [3]int, nBots [4]int) (int, [3]int) {
+	for i := 0; i < 3; i += 1 {
+		if botResources[i] > 0 && nBots[i] == 0 { // no collecting bots available
+			return MaxInt, nResources
+		}
+	}
+	mm := 0
+	for nResources[0] < botResources[0] || nResources[1] < botResources[1] || nResources[2] < botResources[2] {
+		nResources[0] += nBots[0]
+		nResources[1] += nBots[1]
+		nResources[2] += nBots[2]
+		mm += 1
+	}
+	// collected during bot building
+	nResources[0] += nBots[0]
+	nResources[1] += nBots[1]
+	nResources[2] += nBots[2]
+	mm += 1
+	return mm, nResources
+}
+
+func MaxGeodes(blueprint [4][3]int, nBots [4]int, nResources [3]int, nGeodes int, mm int) int {
+	/* key := fmt.Sprint(nBots) + fmt.Sprint(nResources) + Itoa(mm)
+	// check in cache
+	if maxGeo, ok := cache[key]; ok {
+		return maxGeo
+	} */
+
+	maxGeodes := 0
+	for botIdx := 0; botIdx < 4; botIdx += 1 {
+		var max int
+		if nBots[botIdx] >= maxBots[botIdx] { // enought bots of this type
+			max = nGeodes + nBots[3]*mm // skip bot
+		} else {
+			_nBots := nBots
+			_mm := mm
+			// minutes needed to collect resources to build bot
+			minutes, _nResources := CollectResources(blueprint[botIdx], nResources, _nBots)
+
+			if minutes > _mm { // no time to build bot
+				max = nGeodes + _nBots[3]*_mm
+			} else {
+				// build bot
+				// update cracked geodes and remaing time
+				max = _nBots[3] * minutes // geodes cracked during resource collection and build
+				_mm -= minutes
+				//consume resources
+				for i := 0; i < 3; i += 1 {
+					_nResources[i] -= blueprint[botIdx][i]
+				}
+				// build bot
+				_nBots[botIdx] += 1
+
+				max += MaxGeodes(blueprint, _nBots, _nResources, nGeodes, _mm)
+			}
+		}
+
+		if max > maxGeodes {
+			maxGeodes = max
+		}
+
+	}
+
+	//fmt.Println("nBots:", nBots, "nResources:", nResources, "initial nGeodes:", nGeodes, "minutes:", mm, "maxGeodes:", maxGeodes)
+	/* // update cache
+	cache[key] = maxGeodes */
+	return maxGeodes
+}
+
+func MaxBots(blueprint [4][3]int) [4]int {
+	mBots := [4]int{0, 0, 0, MaxInt}
+	for r := 0; r < 3; r += 1 {
+		for b := 0; b < 4; b += 1 {
+			if blueprint[b][r] > mBots[r] {
+				mBots[r] = blueprint[b][r]
+			}
+		}
+	}
+	return mBots
+}
+
+func LoadBlueprints(input string) [][4][3]int {
+	bps := make([][4][3]int, 0)
+	var moveExp = regexp.MustCompile(`Blueprint \d+: Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.`)
+	for _, line := range strings.Split(input, "\n") {
+		match := moveExp.FindStringSubmatch(line)
+		var bp [4][3]int
+		bp[0][0] = Atoi(match[1])
+
+		bp[1][0] = Atoi(match[2])
+
+		bp[2][0] = Atoi(match[3])
+		bp[2][1] = Atoi(match[4])
+
+		bp[3][0] = Atoi(match[5])
+		bp[3][2] = Atoi(match[6])
+
+		bps = append(bps, bp)
+	}
+	return bps
+}
+
+// var cache map[string]int = make(map[string]int)
+var maxBots [4]int
+
+//go:embed input1.txt
+var input1 string
+
+func main() {
+	fmt.Println("AoC 2022, day19!")
+
+	// remove useless newline
+	input1 = strings.TrimSuffix(input1, "\n")
+
+	//blueprint1 := [4][3]int{{4, 0, 0}, {2, 0, 0}, {3, 14, 0}, {2, 0, 7}}
+	//blueprint2 := [4][3]int{{2, 0, 0}, {3, 0, 0}, {3, 8, 0}, {3, 0, 12}}
+
+	/* // initial values
+	nBots := [4]int{1, 0, 0, 0}
+	nResources := [3]int{0, 0, 0}
+	nGeodes := 0
+	minutes := 24
+	maxBots = MaxBots(blueprint2)
+	//fmt.Println(maxBots)
+	nGeodes = MaxGeodes(blueprint2, nBots, nResources, nGeodes, minutes)
+	fmt.Println("nGeodes:", nGeodes)*/
+
+	//fmt.Println(LoadBlueprints(input1))
+
+	blueprints := LoadBlueprints(input1)
+
+	totQuality := 0
+	for i, bp := range blueprints {
+		// initial values
+		nBots := [4]int{1, 0, 0, 0}
+		nResources := [3]int{0, 0, 0}
+		nGeodes := 0
+		minutes := 24
+		maxBots = MaxBots(bp)
+		nGeodes = MaxGeodes(bp, nBots, nResources, nGeodes, minutes)
+		//fmt.Println("nGeodes:", nGeodes)
+		totQuality += (i + 1) * nGeodes
+	}
+
+	fmt.Print("puzzle1 solution: [", totQuality, "]")
+	//Assert(surface == 4400, "  <- WRONG!")
+
+	//fmt.Print("puzzle2 solution: [", surface2, "]")
+	//Assert(surface2 == 2522, "  <- WRONG!")
+}

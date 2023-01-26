@@ -1,0 +1,129 @@
+package main
+
+import (
+	. "aoc2022/utils"
+	_ "embed"
+	"fmt"
+	"strings"
+
+	"golang.org/x/exp/slices"
+	//mapset "github.com/deckarep/golang-set/v2"
+)
+
+//go:embed input1.txt
+var input1 string
+
+func main() {
+	fmt.Println("AoC 2022, day20!")
+
+	// remove useless newline
+	input1 = strings.TrimSuffix(input1, "\n")
+
+	encrypted := LoadEncrypted(input1)
+	//fmt.Println(encrypted)
+	mapping := Remap(encrypted)
+	//fmt.Println(encrypted, "mapping:", mapping)
+	//fmt.Println()
+
+	MUL := 1
+	TIMES := 1
+	plain := MixArray(encrypted, mapping, MUL, TIMES)
+	Restore(plain, mapping, MUL)
+	//fmt.Println(plain) // sol: 1 2 -3 4 0 3 -2
+	zeroIdx := slices.Index(plain, 0)
+	res1 := plain[(zeroIdx+1000)%len(plain)] + plain[(zeroIdx+2000)%len(plain)] + plain[(zeroIdx+3000)%len(plain)]
+
+	fmt.Print("puzzle1 solution: [", res1, "]")
+	Assert(res1 == 23321, "  <- WRONG!")
+
+	MUL = 811589153
+	TIMES = 10
+	encrypted = LoadEncrypted(input1)
+	mapping = Remap(encrypted)
+	plain = MixArray(encrypted, mapping, MUL, TIMES)
+	Restore(plain, mapping, MUL)
+	//fmt.Println(plain)
+	zeroIdx = slices.Index(plain, 0)
+	res2 := plain[(zeroIdx+1000)%len(plain)] + plain[(zeroIdx+2000)%len(plain)] + plain[(zeroIdx+3000)%len(plain)]
+
+	fmt.Print("puzzle2 solution: [", res2, "]")
+	Assert(res2 == 1428396909280, "  <- WRONG!")
+}
+
+func Restore(plain []int, mapping []int, mul int) {
+	for i, v := range plain {
+		plain[i] = mul * mapping[v]
+	}
+}
+
+func Remap(encrypted []int) []int {
+	mapping := make([]int, len(encrypted))
+	for i := 0; i < len(encrypted); i += 1 {
+		mapping[i] = encrypted[i]
+		encrypted[i] = i
+	}
+	return mapping
+}
+
+func MixArray(slice []int, mapping []int, mul int, iters int) []int {
+	orig := make([]int, len(slice))
+	copy(orig, slice)
+	for it := 0; it < iters; it += 1 {
+		for _, v := range orig {
+			sgn := Sign(mapping[v])
+			// reduce swaps number
+			abs := Abs(mul*mapping[v]) % (len(slice) - 1) // reducing cycles
+			if Abs(abs-(len(slice)-1)) < abs {            // change swap direction if it worth
+				abs = Abs(abs - (len(slice) - 1))
+				sgn *= -1
+			}
+			for i := 0; i < abs; i += 1 {
+				idx := slices.Index(slice, v)
+				slice = Swap(slice, idx, sgn)
+				//fmt.Println(slice, idx)
+			}
+			//fmt.Println()
+		}
+	}
+	return slice
+}
+
+func Swap(slice []int, idx, dx int) []int {
+	if dx == 0 { // noop
+		return slice
+	}
+
+	a := idx
+	b := idx + dx
+
+	if idx+dx == len(slice) || idx+dx == -1 {
+		a = 0
+		b = len(slice) - 1
+	}
+
+	slice[a], slice[b] = slice[b], slice[a]
+	return slice
+}
+
+func LoadEncrypted(input1 string) []int {
+	s := make([]int, 0)
+	for _, v := range Split(input1, "\n") {
+		s = append(s, Atoi(v))
+	}
+	return s
+}
+
+/*
+
+1 2 -3 0 3 [4] -2   1>>
+1 2 -3 0 3 -2 [4]   1>>
+1 [4] 2 -3 0 3 -2   1>>
+1 2 [4] -3 0 3 -2   1>>
+1 2 -3 [4] 0 3 -2
+
+
+1 2 [-3] 0 3 4 -2   1<<
+1 [-3] 2 0 3 4 -2   1<<
+1 2 0 3 4 -2 [-3]   1<<
+1 2 0 3 4 [-3] -2
+*/
