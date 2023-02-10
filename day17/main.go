@@ -47,7 +47,7 @@ func Shift(rock Rock, jet byte) Rock {
 }
 
 func CountBits(v uint8) int {
-	return int(PopCount(uint32(v)))
+	return BitCount(uint32(v))
 }
 
 func JetStreamAction(chamber []uint8, jet byte, rock Rock, rockH int) Rock {

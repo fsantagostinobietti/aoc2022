@@ -4,6 +4,7 @@ import (
 	. "aoc2022/utils"
 	_ "embed"
 	"fmt"
+	"math"
 	"strings"
 	//mapset "github.com/deckarep/golang-set/v2"
 )
@@ -45,14 +46,14 @@ func main() {
 	Assert(empty == 4025, "  <- WRONG!")
 
 	elfs = LoadElfs(input1)
-	n := Run(elfs, MaxInt)
+	n := Run(elfs, math.MaxInt)
 	fmt.Print("puzzle2 solution: [", n, "]")
 	Assert(n == 935, "  <- WRONG!")
 }
 
 func MinRectangle(elfs map[Elf]bool) (int, int, int, int) {
-	minR, minC := MaxInt, MaxInt
-	maxR, maxC := MinInt, MinInt
+	minR, minC := math.MaxInt, math.MaxInt
+	maxR, maxC := math.MinInt, math.MinInt
 	for e := range elfs {
 		minR, maxR = Min(minR, e.r), Max(maxR, e.r)
 		minC, maxC = Min(minC, e.c), Max(maxC, e.c)

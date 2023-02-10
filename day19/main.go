@@ -4,6 +4,7 @@ import (
 	. "aoc2022/utils"
 	_ "embed"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	//mapset "github.com/deckarep/golang-set/v2"
@@ -23,7 +24,7 @@ const (
 func CollectResources(botResources [N_RESOURCES]int, nResources [N_RESOURCES]int, nBots [N_BOTS]int) (int, [N_RESOURCES]int) {
 	for i := 0; i < N_RESOURCES; i += 1 {
 		if botResources[i] > 0 && nBots[i] == 0 { // no collecting bots available
-			return MaxInt, nResources
+			return math.MaxInt, nResources
 		}
 	}
 	mm := 0
@@ -101,7 +102,7 @@ func MaxGeodes(blueprint [N_BOTS][N_RESOURCES]int, minutes int) int {
 }
 
 func MaxBots(blueprint [N_BOTS][N_RESOURCES]int) [N_BOTS]int {
-	mBots := [N_BOTS]int{0, 0, 0, MaxInt}
+	mBots := [N_BOTS]int{0, 0, 0, math.MaxInt}
 	for r := 0; r < N_RESOURCES; r += 1 {
 		for b := 0; b < N_BOTS; b += 1 {
 			if blueprint[b][r] > mBots[r] {
